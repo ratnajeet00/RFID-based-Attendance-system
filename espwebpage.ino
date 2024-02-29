@@ -1,11 +1,11 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <SoftwareSerial.h>
-#include <ArduinoJson.h>  // Add ArduinoJson library for JSON parsing
+#include <ArduinoJson.h>
 
 const char* ssid = "MyWifi";
 const char* password = "Vikas@16";
-const char* apiUrl = "http://192.168.1.12:3000/attendance"; // Replace with your server address
+const char* apiUrl = "https://192.168.1.3:3000/attendance"; // Replace with your server address
 
 SoftwareSerial mySerial(D2, D3); // RX=D2, TX=D3
 
@@ -25,17 +25,21 @@ void loop() {
   if (mySerial.available() > 0) {
     String uid = mySerial.readStringUntil('\n');
 
-    // URL encode the RFID UID
+    // Print the raw RFID UID
+    Serial.println("Raw RFID UID: " + uid);
+
+    // URL encode the RFID UID using custom function
     String encodedUid = urlEncode(uid);
 
-    Serial.println("RFID UID: " + uid);
+    // Print the URL-encoded UID
+    Serial.println("Encoded RFID UID: " + encodedUid);
 
     // Make HTTP request to get the name from the server
     String name = getNameFromServer(encodedUid);
 
     // Send the name back to the Arduino
     mySerial.println(name);
-    Serial.println("name:"+name);
+    Serial.println("Name: " + name);
   }
 
   delay(5000);
@@ -56,7 +60,12 @@ String getNameFromServer(String encodedUid) {
 
   Serial.println("Sent JSON Payload: " + jsonPayload);
 
+  // Make the HTTP POST request
   int httpCode = http.POST(jsonPayload);
+
+  // Print the HTTP response code
+  Serial.print("HTTP response code: ");
+  Serial.println(httpCode);
 
   String name = "";
 
@@ -68,6 +77,7 @@ String getNameFromServer(String encodedUid) {
     name = parseJsonResponse(response);
   } else {
     Serial.println("HTTP request failed");
+    Serial.println(http.getString());  // Print server response even if the request fails
   }
 
   http.end();
@@ -87,16 +97,17 @@ String parseJsonResponse(String jsonResponse) {
   return name;
 }
 
-
 // Function to URL encode a string
 String urlEncode(String str) {
   String encodedString = "";
+
   char c;
   char code0;
   char code1;
 
   for (unsigned int i = 0; i < str.length(); i++) {
     c = str.charAt(i);
+
     if (c == ' ') {
       encodedString += '+';
     } else if ((c >= 'A' && c <= 'Z') ||
@@ -119,5 +130,6 @@ String urlEncode(String str) {
     }
     yield();
   }
+
   return encodedString;
 }

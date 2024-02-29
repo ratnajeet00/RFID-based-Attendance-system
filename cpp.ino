@@ -47,22 +47,24 @@ void loop() {
 
     mySerial.println(uid);
 
-    // Wait for ESP8266 response (name) - adjust delay as needed
-    delay(5000);
+    Serial.println("Waiting for ESP8266 response...");
 
-    // Check for incoming data from ESP8266
-    while (mySerial.available() > 0) {
-      String name = mySerial.readStringUntil('\n');
-      displayOnLCD(name);
-      Serial.println("Received Name from ESP8266: " + name);
-      delay(5000);
+    // Wait for ESP8266 response (name) - wait until serial data is available
+    while (!mySerial.available()) {
+      // Do nothing while waiting for data
     }
 
-    placeacard();
+    // Check for incoming data from ESP8266
+    String name = mySerial.readStringUntil('\n');
+    lcd.clear();
+    displayOnLCD(name);
+    Serial.println("Received Name from ESP8266: " + name);
   }
 
+  placeacard();
   delay(500);
 }
+
 
 String getCardUID() {
   String cardUID = "";
@@ -72,25 +74,22 @@ String getCardUID() {
   }
   return cardUID;
 }
-
 void displayOnLCD(String name) {
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("Name: " + name);
-
-  // If the name is longer than the LCD width, scroll it
- if (name.length() > lcdColumns) {
+  
+  if (name.length() <= lcdColumns) {
+    // If the name fits on one line, display it directly
+    lcd.print("Name: " + name);
+  } else {
+    // If the name is longer than the LCD width, scroll it
     for (int i = 0; i < name.length() - lcdColumns + 1; i++) {
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Name: " + name.substring(i, i + lcdColumns));
-        delay(1000);
-        
-        delay(1000); // Adjust the delay as needed for scrolling speed
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Name: " + name.substring(i, i + lcdColumns));
+      delay(500);  // Adjust the delay as needed for scrolling speed
     }
   }
-  lcd.clear();
-  lcd.setCursor(0,0);
-  lcd.print("Present marked");
-
+  delay(3000);  // Display the full name for a moment (adjust as needed)
 }
+
